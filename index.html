@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智序 Prio</title>
+  <link rel="stylesheet" href="/frontend/style.css" />
+</head>
+<body>
+  <header class="hero">
+    <h1>智序 Prio</h1>
+    <p class="hero-sub">越用越懂你的私人时间管理系统</p>
+  </header>
+
+  <section class="matrix-section">
+    <div class="matrix-wrap">
+      <span class="quad-label quad-tr">重要 · 紧急</span>
+      <span class="quad-label quad-tl">紧急 · 不重要</span>
+      <span class="quad-label quad-br">重要 · 不紧急</span>
+      <span class="quad-label quad-bl">不重要 · 不紧急</span>
+      <div class="axis-label axis-x-pos">重要性 →</div>
+      <div class="axis-label axis-y-pos">↑ 紧急性</div>
+      <div class="matrix-plane" id="matrixPlane">
+        <div class="axis-line axis-h"></div>
+        <div class="axis-line axis-v"></div>
+      </div>
+    </div>
+    <p class="scroll-hint">↓ 向下滚动查看待办清单</p>
+  </section>
+
+  <section class="list-section">
+    <h2>待办清单</h2>
+    <div class="task-list" id="taskList"></div>
+  </section>
+
+  <div class="hover-card" id="hoverCard">
+    <div class="hover-card-title" id="hoverTitle"></div>
+    <div class="hover-card-meta">
+      <span class="hover-meta-item" id="hoverImportance"></span>
+      <span class="hover-meta-item" id="hoverUrgency"></span>
+      <span class="hover-meta-item" id="hoverRank"></span>
+    </div>
+  </div>
+
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <h3 id="detailTitle">任务标题</h3>
+      <span class="detail-close" id="detailClose">×</span>
+    </div>
+    <div class="chat-log" id="chatLog"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" placeholder="想问问这个任务的什么？" />
+      <button id="chatSend">发送</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal-box">
+      <p id="confirmText">确定要删除这个任务吗？</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="confirmCancel">取消</button>
+        <button class="btn-danger" id="confirmOk">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bottom-bar">
+    <input type="text" id="bottomInput" placeholder="可以语音或打字输入你想做的事" />
+    <button class="mic-btn" id="micBtn" title="语音输入（占位）">🎙</button>
+    <button class="send-btn" id="bottomSend">发送</button>
+  </footer>
+
+  <script type="module" src="/frontend/main.js"></script>
+</body>
+</html>

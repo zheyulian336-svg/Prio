@@ -1,0 +1,456 @@
+:root {
+  --bg: #f5f5f7;
+  --panel-bg: #ffffff;
+  --ink: #1d1d1f;
+  --ink-soft: #6e6e73;
+  --border: #e5e5ea;
+  --accent: #007aff;
+  --danger: #ff3b30;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  padding-bottom: 96px;
+}
+
+.hero {
+  padding: 48px 32px 16px;
+  text-align: center;
+}
+.hero h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.hero-sub {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.matrix-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 24px 40px;
+  min-height: calc(100vh - 140px);
+  justify-content: center;
+}
+
+.matrix-wrap {
+  position: relative;
+  width: min(640px, 90vw);
+  height: min(640px, 60vh);
+  background: var(--panel-bg);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.matrix-plane {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  overflow: visible;
+}
+
+.axis-line {
+  position: absolute;
+  background: var(--border);
+}
+.axis-h {
+  left: 4%;
+  right: 4%;
+  top: 50%;
+  height: 1px;
+}
+.axis-v {
+  top: 4%;
+  bottom: 4%;
+  left: 50%;
+  width: 1px;
+}
+
+.quad-label {
+  position: absolute;
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.quad-tr {
+  top: 10px;
+  right: 16px;
+}
+.quad-tl {
+  top: 10px;
+  left: 16px;
+}
+.quad-br {
+  bottom: 10px;
+  right: 16px;
+}
+.quad-bl {
+  bottom: 10px;
+  left: 16px;
+}
+
+.axis-label {
+  position: absolute;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.axis-x-pos {
+  bottom: -22px;
+  right: 0;
+}
+.axis-y-pos {
+  top: -20px;
+  left: 0;
+}
+
+.ball {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  margin-top: -8px;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, left 0.2s ease, top 0.2s ease;
+  z-index: 2;
+}
+.ball:hover {
+  transform: scale(1.15);
+}
+.ball-pressed {
+  transform: scale(1.3);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.ball.dragging {
+  transition: none;
+  z-index: 5;
+  transform: scale(1.3);
+}
+.ball-enter {
+  transform: scale(0);
+  opacity: 0;
+}
+
+.scroll-hint {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+/* 悬停预览卡片 —— 就近展开详情 */
+.hover-card {
+  position: fixed;
+  width: 260px;
+  background: var(--panel-bg);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  padding: 16px 18px;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 999;
+}
+.hover-card.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.hover-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.hover-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hover-meta-item {
+  font-size: 12px;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.hover-meta-item::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.list-section {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+}
+.list-section h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel-bg);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.task-card:hover {
+  box-shadow: var(--shadow);
+}
+.task-card.card-dragging {
+  opacity: 0.6;
+  transform: scale(1.01);
+}
+
+.card-handle {
+  cursor: grab;
+  color: var(--ink-soft);
+  font-size: 16px;
+  user-select: none;
+}
+.card-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.card-title {
+  flex: 1;
+  font-size: 15px;
+}
+.card-close {
+  color: var(--ink-soft);
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.card-close:hover {
+  background: var(--bg);
+  color: var(--danger);
+}
+
+.detail-panel {
+  position: fixed;
+  top: 20px;
+  width: 400px;
+  height: calc(100vh - 110px);
+  background: var(--panel-bg);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  display: none;
+  flex-direction: column;
+  z-index: 50;
+  overflow: hidden;
+}
+.detail-panel.visible {
+  display: flex;
+}
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.detail-header h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.detail-close {
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: 22px;
+  line-height: 1;
+}
+.detail-close:hover {
+  color: var(--ink);
+}
+
+.chat-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.chat-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.chat-ai {
+  align-self: flex-start;
+  background: var(--bg);
+  color: var(--ink);
+}
+.chat-user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+}
+.chat-thinking {
+  font-style: italic;
+  color: var(--ink-soft);
+  background: var(--bg);
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+.chat-input-row input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+}
+.chat-input-row button {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-overlay.visible {
+  display: flex;
+}
+.modal-box {
+  background: var(--panel-bg);
+  border-radius: 16px;
+  padding: 24px;
+  width: 300px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.modal-box p {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.btn-secondary,
+.btn-danger {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.btn-secondary {
+  background: var(--bg);
+  color: var(--ink);
+}
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-top: 1px solid var(--border);
+  z-index: 60;
+}
+.bottom-bar input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  outline: none;
+  background: var(--bg);
+}
+.bottom-bar input::placeholder {
+  color: var(--ink-soft);
+}
+.mic-btn {
+  border: none;
+  background: var(--bg);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+.mic-btn.mic-active {
+  background: var(--accent);
+  transform: scale(0.92);
+}
+.send-btn {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 14px;
+  cursor: pointer;
+}

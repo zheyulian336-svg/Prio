@@ -1,0 +1,1 @@
+// 语音识别供应商目录占位。以后接入 Whisper 时，在这里新增 whisperProvider.js。

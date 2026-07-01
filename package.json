@@ -1,0 +1,12 @@
+{
+  "name": "prio",
+  "version": "0.1.0",
+  "description": "智序 Prio · MVP",
+  "main": "server/app.js",
+  "scripts": {
+    "start": "node server/app.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
