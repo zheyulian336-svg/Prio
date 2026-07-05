@@ -86,7 +86,7 @@ async function parseTasks(text, userId, audioBase64, mimeType) {
   }
 
   const json = await res.json();
-  console.log('[difyProvider] Workflow 返回:', JSON.stringify(json).slice(0, 500));
+  console.log('[difyProvider] Workflow 完整返回:', JSON.stringify(json));
   const rawTasks = json?.data?.outputs?.task;
   if (!Array.isArray(rawTasks)) {
     console.error('[difyProvider] 未预期的返回结构:', JSON.stringify(json));
