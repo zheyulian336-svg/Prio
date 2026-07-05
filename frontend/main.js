@@ -3,7 +3,7 @@
 
 import * as store from './store.js';
 import * as api from './api-client.js';
-import { initMatrix, renderMatrix, rankColorMap, getBallEl } from './matrix.js';
+import { initMatrix, renderMatrix, rankColorMap, getBallEl, quadrantOf } from './matrix.js';
 import { handleBallMouseDown, attachCardHandleDrag } from './drag.js';
 
 const matrixPlane = document.getElementById('matrixPlane');
@@ -39,6 +39,12 @@ store.subscribe((tasks) => {
     onDragStart: onBallMouseDown,
   });
   renderList(tasks);
+  // 空状态：矩阵里没有任务时加个引导样式
+  if (tasks.length === 0) {
+    matrixPlane.classList.add('matrix-empty');
+  } else {
+    matrixPlane.classList.remove('matrix-empty');
+  }
 });
 
 store.init();
@@ -121,10 +127,24 @@ function onBallMouseDown(taskId, ballEl, event) {
     onDropSameQuadrant(id, x, y) {
       ballEl.classList.remove('ball-pressed');
       store.updateTaskPosition(id, x, y);
+      api.reportDragEvent({
+        taskTitle: task.title,
+        fromX: task.x, fromY: task.y,
+        toX: x, toY: y,
+        fromQuadrant: quadrantOf(task.x, task.y),
+        toQuadrant: quadrantOf(x, y),
+      });
     },
     onDropOtherQuadrant(id, x, y) {
       ballEl.classList.remove('ball-pressed');
       store.updateTaskPosition(id, x, y);
+      api.reportDragEvent({
+        taskTitle: task.title,
+        fromX: task.x, fromY: task.y,
+        toX: x, toY: y,
+        fromQuadrant: quadrantOf(task.x, task.y),
+        toQuadrant: quadrantOf(x, y),
+      });
     },
     onDropOutside(id) {
       ballEl.classList.remove('ball-pressed');
@@ -148,6 +168,15 @@ function onBallMouseDown(taskId, ballEl, event) {
 function renderList(tasks) {
   const colorMap = rankColorMap(tasks);
   listContainer.innerHTML = '';
+
+  if (tasks.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'list-empty';
+    empty.textContent = '在下方输入你想做的事情，AI 会帮你拆解任务并智能排布到四象限中 ✨';
+    listContainer.appendChild(empty);
+    return;
+  }
+
   tasks.forEach((task) => {
     const card = document.createElement('div');
     card.className = 'task-card';
@@ -271,10 +300,8 @@ async function sendChat() {
 
   try {
     const reply = await api.chatReply(currentDetailTaskId, task ? task.title : '', msg);
-    setTimeout(() => {
-      thinking.remove();
-      appendChatBubble('ai', reply);
-    }, 400 + Math.random() * 300);
+    thinking.remove();
+    appendChatBubble('ai', reply);
   } catch (e) {
     thinking.remove();
     appendChatBubble('ai', '抱歉，网络似乎出了点问题。');
@@ -314,6 +341,71 @@ bottomInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') submitBottomInput();
 });
 
-micBtn.addEventListener('mousedown', () => micBtn.classList.add('mic-active'));
-micBtn.addEventListener('mouseup', () => micBtn.classList.remove('mic-active'));
-micBtn.addEventListener('mouseleave', () => micBtn.classList.remove('mic-active'));
+// ---------- 语音输入（SpeechRecognition 连续转写 → 文字发给 Dify）----------
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let isListening = false;
+let transcriptParts = [];
+const bottomPlaceholder = bottomInput.placeholder;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'zh-CN';
+  recognition.continuous = true;   // 不自动断句
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  recognition.addEventListener('result', (e) => {
+    // 每次识别到新内容就追加
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const part = e.results[i][0].transcript.trim();
+      if (part) transcriptParts.push(part);
+    }
+    // 输入框显示当前总内容
+    const allText = transcriptParts.join('');
+    bottomInput.value = allText;
+  });
+
+  recognition.addEventListener('end', () => {
+    isListening = false;
+    micBtn.classList.remove('mic-active');
+    bottomInput.placeholder = bottomPlaceholder;
+
+    // 识别结束后自动提交
+    const fullText = transcriptParts.join('').trim();
+    if (fullText) {
+      bottomInput.value = fullText;
+      submitBottomInput();
+    }
+    transcriptParts = [];
+  });
+
+  recognition.addEventListener('error', (e) => {
+    console.warn('语音识别错误:', e.error);
+    isListening = false;
+    micBtn.classList.remove('mic-active');
+    bottomInput.placeholder = bottomPlaceholder;
+    transcriptParts = [];
+    if (e.error === 'not-allowed') {
+      alert('请允许麦克风权限后重试');
+    }
+  });
+}
+
+micBtn.addEventListener('click', () => {
+  if (!recognition) {
+    alert('您的浏览器不支持语音输入，请使用 Chrome 或 Edge');
+    return;
+  }
+  if (isListening) {
+    recognition.stop();
+  } else {
+    transcriptParts = [];
+    bottomInput.value = '';
+    isListening = true;
+    micBtn.classList.add('mic-active');
+    bottomInput.placeholder = '🔴 正在录音…再次点击结束';
+    recognition.start();
+  }
+});

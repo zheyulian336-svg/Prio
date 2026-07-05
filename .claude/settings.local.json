@@ -10,7 +10,20 @@
       "Bash(git init *)",
       "Bash(gh repo *)",
       "Bash(git add *)",
-      "Bash(git commit -m 'Initial commit: Prio 私人时间管理系统 *)"
+      "Bash(git commit -m 'Initial commit: Prio 私人时间管理系统 *)",
+      "Bash(npm install *)",
+      "Bash(curl -s -X POST https://api.dify.ai/v1/workflows/run -H 'Authorization: Bearer app-XtUV2giBOufxShhc2t5Aw7F6' -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(node -e ' *)",
+      "Bash(timeout 10 node -e ' *)",
+      "Bash(pkill -f \"node.*server/app\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/tasks/test123/chat -H 'Content-Type: application/json' -d '{\"message\": \"这个任务怎么拆解？\", \"taskTitle\": \"写季度周报\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/events/drag -H 'Content-Type: application/json' -d '{\"taskTitle\":\"写季度周报\",\"fromX\":0.5,\"fromY\":0.5,\"toX\":0.8,\"toY\":0.7,\"fromQuadrant\":\"important-urgent\",\"toQuadrant\":\"important-urgent\"}')",
+      "Bash(pkill -f \"node server/app\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/tasks/parse -H 'Content-Type: application/json' -d '{\"text\":\"写代码,回复邮件\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'返回 {len\\(d[\\\\\"tasks\\\\\"]\\)} 个任务:'\\); [print\\(f' - {t[\\\\\"title\\\\\"]} \\({t[\\\\\"quadrant\\\\\"]}\\)'\\) for t in d['tasks']]\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s -X POST http://localhost:3000/api/tasks/parse -H 'Content-Type: application/json' -d '{\"text\":\"写代码,写周报\"}')"
     ]
   }
 }

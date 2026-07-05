@@ -4,7 +4,7 @@
 
 const SPLIT_REGEX = /[、，,;；\n]+/;
 
-async function parseTasks(text) {
+async function parseTasks(text, _userId, _audioFileId) {
   const rawTitles = text
     .split(SPLIT_REGEX)
     .map((s) => s.trim())

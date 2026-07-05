@@ -217,6 +217,28 @@ body {
   gap: 10px;
 }
 
+.list-empty {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 14px;
+  padding: 24px 16px;
+  line-height: 1.6;
+}
+
+/* 矩阵空状态：中间显示引导文字 */
+.matrix-empty::after {
+  content: '在下方输入你想做的事 👇';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .task-card {
   display: flex;
   align-items: center;
