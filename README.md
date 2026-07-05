@@ -64,3 +64,99 @@ prio/
 5. **矩阵越界判定**：用小球中心像素坐标是否超出矩阵面板矩形（留了小球半径的缓冲）来判断"是否已脱离矩阵可视边界"，松手时超出则弹出删除确认框，这是需求里"唯一删除入口"的直接实现。
 
 6. **颜色兜底规则**：严格按需求实现——按 Score 排序取前 7 名映射 红/橙/黄/绿/青/蓝/紫，超出部分统一用中性灰（`#9a9a9e`）兜底。
+
+---
+
+## Mac 桌面应用（Electron）
+
+项目已集成 Electron，可打包为 Mac `.app` / `.dmg`，**双击即可运行，无需手动开终端和浏览器**。
+
+### 开发模式运行
+
+```bash
+# 首次使用需安装依赖
+npm install
+
+# 以桌面窗口方式运行（自动启动后端 + 开窗）
+npm run electron
+```
+
+> 与 `npm start`（纯后端，然后手动打开浏览器 `localhost:3000`）互不干扰，两种方式可同时存在。
+
+### 打包为 Mac .app / .dmg
+
+```bash
+# 首次打包前，如果刚装过 electron 或改过原生依赖，先重建原生模块
+npx @electron/rebuild
+
+# 打包（产出 .dmg + .app 到 dist/ 目录）
+npm run dist
+```
+
+产物在 `dist/` 目录：
+
+| 文件 | 说明 |
+|------|------|
+| `dist/智序 Prio-x.x.x-arm64.dmg` | DMG 安装包（用于分发） |
+| `dist/mac-arm64/智序 Prio.app` | 可直接双击运行的 App |
+
+> ⚠️ 仅支持 **macOS Apple Silicon (M 系列芯片)**，不支持 Intel Mac 和 Windows。
+
+---
+
+## 分发给同学（GitHub Releases）
+
+### 前置安全警告 ⚠️
+
+`server/config.js` 包含真实的 Dify / DeepSeek API Key，**绝不能被推送公开仓库**：
+
+```bash
+# 1. 创建不含真实 key 的模板文件
+cp server/config.js server/config.example.js
+# 手动编辑 server/config.example.js，把 apiKey 值替换为 "your-api-key-here"
+
+# 2. 从 git 追踪中移除真实 config.js（文件仍保留在本地）
+git rm --cached server/config.js
+
+# 3. 加入 .gitignore
+echo "server/config.js" >> .gitignore
+
+# 4. 提交
+git add .gitignore server/config.example.js
+git commit -m "chore: remove config.js from tracking, add example template"
+```
+
+> 如果你的仓库是**公开的（public）**且 config.js 已被推过，旧 key 已暴露在 git 历史中——须立刻去 Dify / DeepSeek 后台**轮换 key**。分发出去的 `.app` / `.dmg` 里仍打包着 key，懂技术的人可以提取出来、消耗你的 API 额度。小范围发给几个同学风险可控；公开发布前须改为服务端中转。
+
+### 推送代码
+
+```bash
+git add .
+git commit -m "feat: add Electron desktop app packaging"
+git push origin master
+```
+
+### 创建 Release 并上传 .dmg
+
+1. 浏览器打开 `https://github.com/<你的用户名>/Prio/releases`
+2. 点击 **"Create a new release"**
+3. 填写：
+   - **Tag version**: `v0.1.0`
+   - **Release title**: `智序 Prio v0.1.0 · Mac 桌面版`
+4. **上传附件**：把 `dist/智序 Prio-x.x.x-arm64.dmg` 拖入 "Attach binaries" 区域
+5. 点击 **"Publish release"**
+
+> 💡 **直接上传 .dmg** 即可，不需要再压缩成 .zip。.dmg 是 Mac 标准安装格式，同学下载后双击挂载、拖入 Applications 就能用。打包产物约 120 MB，超过 GitHub 普通文件 100 MB 限制，**必须走 Release 附件**（支持最大 2 GB），不要当普通代码文件提交。
+
+### 同学安装说明（复制这段发给同学）
+
+> **智序 Prio Mac 桌面版安装说明**
+>
+> 1. 下载 `智序 Prio-x.x.x-arm64.dmg`
+> 2. 双击打开 .dmg → 把「智序 Prio」拖进 Applications 文件夹
+> 3. **首次打开时**：直接双击会提示「来自身份不明的开发者」，这是正常现象（App 未签名）。
+>    - 在 Applications 文件夹里**右键点击**「智序 Prio」
+>    - 选择 **"打开"**
+>    - 弹出的对话框里点 **"打开"**
+>    - 只需做一次，以后双击就能正常运行
+> 4. **仅支持 macOS (Apple Silicon)**，Intel Mac 和 Windows 电脑无法使用。

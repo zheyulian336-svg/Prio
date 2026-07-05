@@ -2,13 +2,37 @@
   "name": "prio",
   "version": "0.1.0",
   "description": "智序 Prio · MVP",
-  "main": "server/app.js",
+  "main": "electron-main.js",
   "scripts": {
-    "start": "node server/app.js"
+    "start": "node server/app.js",
+    "electron": "./node_modules/.bin/electron .",
+    "dist": "./node_modules/.bin/electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.prio.app",
+    "productName": "智序 Prio",
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**"
+    ],
+    "mac": {
+      "target": "dmg"
+    },
+    "files": [
+      "index.html",
+      "frontend/**/*",
+      "server/**/*",
+      "electron-main.js",
+      "package.json"
+    ]
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
     "express": "^4.19.2",
     "multer": "^2.2.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.1.0",
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3"
   }
 }
