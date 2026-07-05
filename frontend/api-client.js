@@ -17,6 +17,17 @@ async function parseTasks(text) {
   return data.tasks;
 }
 
+async function parseAudio(audioBase64, mimeType) {
+  const res = await fetch('/api/tasks/parse', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ audio: audioBase64, mimeType, user_id: userId() }),
+  });
+  if (!res.ok) throw new Error('解析音频失败');
+  const data = await res.json();
+  return data.tasks;
+}
+
 async function chatReply(taskId, taskTitle, message) {
   const res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/chat`, {
     method: 'POST',
@@ -41,4 +52,4 @@ async function reportDragEvent(eventData) {
   }
 }
 
-export { parseTasks, chatReply, reportDragEvent };
+export { parseTasks, parseAudio, chatReply, reportDragEvent };

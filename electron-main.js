@@ -49,8 +49,10 @@ async function startServer() {
   console.log(`[electron] 使用端口: ${port}`);
 
   const serverPath = path.join(__dirname, 'server', 'app.js');
+  // 传入可写数据目录：打包后 app.asar 内只读，需用 userData
+  const dataDir = path.join(app.getPath('userData'), 'data');
   serverProcess = fork(serverPath, [], {
-    env: { ...process.env, PORT: String(port) },
+    env: { ...process.env, PORT: String(port), PRIO_DATA_DIR: dataDir },
     silent: true,
   });
 

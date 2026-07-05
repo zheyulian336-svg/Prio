@@ -7,7 +7,7 @@ const { sortByScore } = require('./core/scorer');
 const { getProfile, insertDragEvent, getRecentDragEvents, upsertProfile } = require('./db');
 
 const app = express();
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
 
 // 托管前端静态资源：index.html 在项目根目录，frontend/ 是 JS/CSS
 app.use(express.static(path.join(__dirname, '..')));
@@ -25,17 +25,25 @@ function getUserId(req) {
 
 // ---- 路由 ----
 
-// 解析任务：文字 → Dify Workflow 拆解 → 包装成 Task
+// 解析任务：文字/音频 → Dify Workflow 拆解 → 包装成 Task
 app.post('/api/tasks/parse', async (req, res) => {
-  const { text } = req.body || {};
-  if (typeof text !== 'string' || !text.trim()) {
-    return res.status(400).json({ error: 'text 不能为空' });
+  const { text, audio, mimeType } = req.body || {};
+  const hasText = typeof text === 'string' && text.trim();
+  const hasAudio = typeof audio === 'string' && audio;
+
+  if (!hasText && !hasAudio) {
+    return res.status(400).json({ error: 'text 或 audio 不能同时为空' });
   }
 
   try {
     const userId = getUserId(req);
     const provider = getLlmProvider();
-    const rawItems = await provider.parseTasks(text.trim(), userId);
+    const rawItems = await provider.parseTasks(
+      hasText ? text.trim() : '',
+      userId,
+      hasAudio ? audio : null,
+      hasAudio ? (mimeType || 'audio/webm') : null
+    );
     const tasks = sortByScore(rawItems.map((item) => createTask(item)));
     res.json({ tasks });
   } catch (err) {
@@ -82,7 +90,15 @@ app.post('/api/tasks/:id/chat', async (req, res) => {
     }
 
     const json = await apiRes.json();
-    const reply = json.answer || '（AI 未返回内容）';
+    let reply = json.answer || '（AI 未返回内容）';
+    // 过滤掉模型的 think 思考过程（DeepSeek 等模型会在输出中夹带）
+    reply = reply.replace(/<think[\s\S]*?<\/think>/gi, '');
+    // 过滤掉 prompt 模板残留的花括号占位符（如 {}、{吃饭} 等）
+    reply = reply.replace(/\{[^}]*\}/g, '');
+    // 清理残留的落单花括号
+    reply = reply.replace(/[{}]/g, '');
+    reply = reply.trim();
+    if (!reply) reply = '（AI 未返回内容）';
     if (json.conversation_id) conversationMap.set(taskId, json.conversation_id);
     res.json({ reply });
   } catch (err) {

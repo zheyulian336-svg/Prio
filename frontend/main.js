@@ -341,71 +341,166 @@ bottomInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') submitBottomInput();
 });
 
-// ---------- 语音输入（SpeechRecognition 连续转写 → 文字发给 Dify）----------
+// ---------- 语音输入（AudioContext 录 PCM → 编码 WAV → 发 Dify Workflow 转写）----------
 
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition = null;
-let isListening = false;
-let transcriptParts = [];
+let audioContext = null;
+let scriptProcessor = null;
+let mediaStream = null;
+let pcmChunks = [];
+let isRecording = false;
+let sampleRate = 44100;
 const bottomPlaceholder = bottomInput.placeholder;
 
-if (SpeechRecognition) {
-  recognition = new SpeechRecognition();
-  recognition.lang = 'zh-CN';
-  recognition.continuous = true;   // 不自动断句
-  recognition.interimResults = true;
-  recognition.maxAlternatives = 1;
+// 将 PCM 数据编码为 WAV 文件（16-bit mono PCM）
+function encodeWAV(samples, rate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
 
-  recognition.addEventListener('result', (e) => {
-    // 每次识别到新内容就追加
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const part = e.results[i][0].transcript.trim();
-      if (part) transcriptParts.push(part);
+  function writeString(offset, str) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
     }
-    // 输入框显示当前总内容
-    const allText = transcriptParts.join('');
-    bottomInput.value = allText;
-  });
+  }
 
-  recognition.addEventListener('end', () => {
-    isListening = false;
-    micBtn.classList.remove('mic-active');
-    bottomInput.placeholder = bottomPlaceholder;
+  const numChannels = 1;
+  const bitsPerSample = 16;
+  const byteRate = rate * numChannels * bitsPerSample / 8;
+  const blockAlign = numChannels * bitsPerSample / 8;
+  const dataSize = samples.length * blockAlign;
 
-    // 识别结束后自动提交
-    const fullText = transcriptParts.join('').trim();
-    if (fullText) {
-      bottomInput.value = fullText;
-      submitBottomInput();
-    }
-    transcriptParts = [];
-  });
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);                   // PCM format
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, rate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
 
-  recognition.addEventListener('error', (e) => {
-    console.warn('语音识别错误:', e.error);
-    isListening = false;
-    micBtn.classList.remove('mic-active');
-    bottomInput.placeholder = bottomPlaceholder;
-    transcriptParts = [];
-    if (e.error === 'not-allowed') {
+  // 写入 16-bit PCM samples
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    offset += 2;
+  }
+
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+async function startRecording() {
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    sampleRate = audioContext.sampleRate;
+
+    const source = audioContext.createMediaStreamSource(mediaStream);
+    // ScriptProcessorNode: 每 4096 帧处理一次
+    scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+    pcmChunks = [];
+
+    scriptProcessor.onaudioprocess = (e) => {
+      // 获取输入通道的 Float32 PCM 数据
+      const inputData = e.inputBuffer.getChannelData(0);
+      // 复制一份（因为 AudioContext 可能会复用 buffer）
+      pcmChunks.push(new Float32Array(inputData));
+    };
+
+    source.connect(scriptProcessor);
+    scriptProcessor.connect(audioContext.destination);
+
+    isRecording = true;
+    micBtn.classList.add('mic-active');
+    bottomInput.placeholder = '🔴 正在录音…再次点击结束';
+  } catch (e) {
+    console.error('麦克风访问失败:', e);
+    if (e.name === 'NotAllowedError') {
       alert('请允许麦克风权限后重试');
+    } else {
+      alert('无法访问麦克风，请检查设备');
     }
+  }
+}
+
+async function stopRecording() {
+  if (!isRecording) return;
+  stopRecordingUI();
+
+  // 断开音频处理链
+  if (scriptProcessor) {
+    scriptProcessor.disconnect();
+    scriptProcessor = null;
+  }
+  if (audioContext) {
+    audioContext.close();
+    audioContext = null;
+  }
+  if (mediaStream) {
+    mediaStream.getTracks().forEach((t) => t.stop());
+    mediaStream = null;
+  }
+
+  if (pcmChunks.length === 0) return;
+
+  // 合并所有 PCM 片段 → 编码 WAV → base64
+  const totalLength = pcmChunks.reduce((sum, c) => sum + c.length, 0);
+  const merged = new Float32Array(totalLength);
+  let offset = 0;
+  for (const chunk of pcmChunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  pcmChunks = [];
+
+  const wavBlob = encodeWAV(merged, sampleRate);
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(wavBlob);
   });
+
+  try {
+    bottomInput.value = '';
+    bottomInput.disabled = true;
+    const tasks = await api.parseAudio(base64, 'audio/wav');
+    tasks.forEach((t, idx) => {
+      setTimeout(() => {
+        store.addTasks([t]);
+      }, idx * 250);
+    });
+  } catch (e) {
+    console.error('音频解析失败:', e);
+    alert('语音解析失败，请稍后再试');
+  } finally {
+    bottomInput.disabled = false;
+  }
+}
+
+function stopRecordingUI() {
+  isRecording = false;
+  micBtn.classList.remove('mic-active');
+  bottomInput.placeholder = bottomPlaceholder;
 }
 
 micBtn.addEventListener('click', () => {
-  if (!recognition) {
-    alert('您的浏览器不支持语音输入，请使用 Chrome 或 Edge');
-    return;
-  }
-  if (isListening) {
-    recognition.stop();
+  if (isRecording) {
+    stopRecording();
   } else {
-    transcriptParts = [];
-    bottomInput.value = '';
-    isListening = true;
-    micBtn.classList.add('mic-active');
-    bottomInput.placeholder = '🔴 正在录音…再次点击结束';
-    recognition.start();
+    startRecording();
   }
 });

@@ -2,9 +2,15 @@
 // 文件位置：server/data/prio.db
 
 const path = require('path');
+const fs = require('fs');
 const Database = require('better-sqlite3');
 
-const DB_PATH = path.join(__dirname, 'data', 'prio.db');
+const DB_PATH = process.env.PRIO_DATA_DIR
+  ? path.join(process.env.PRIO_DATA_DIR, 'prio.db')
+  : path.join(__dirname, 'data', 'prio.db');
+
+// 确保数据库所在目录存在（打包后 Electron 的 userData 目录可能还没有）
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 let db = null;
 
